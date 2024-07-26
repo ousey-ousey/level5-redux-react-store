@@ -1,19 +1,24 @@
 import { useParams } from "react-router-dom";
 import { useGetProductByIdQuery } from "../../Redux/productsApi";
-import { Box, CircularProgress, Typography } from "@mui/material";
-import "./details.css";
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  Badge,
+  Button,
+  IconButton,
+  styled,
+} from "@mui/material";
 import React, { useRef, useState } from "react";
-import { Badge, Button, IconButton, styled } from "@mui/material";
 import DetailsThumb from "./DetailsThump";
-
 import { useDispatch, useSelector } from "react-redux";
-
 import {
   addProduct,
   decreaseQuantity,
   increaseQuantity,
 } from "../../Redux/cartSlic";
 import { Add, Remove, ShoppingCart } from "@mui/icons-material";
+import "./details.css";
 
 const ProductDetails = () => {
   const dispatch = useDispatch();
@@ -23,20 +28,20 @@ const ProductDetails = () => {
       color: "#fff",
     },
   }));
+
   const { selectedProducts, selectedProductsID } = useSelector(
-    // @ts-ignore
     (state) => state.cart
   );
-  let { id } = useParams();
-  // data => only one product
-  const { data, error, isLoading } = useGetProductByIdQuery(id);
+  const { id } = useParams();
+  const productId = parseInt(id, 10); // Ensure id is a number
 
-  const [index, setindex] = useState(0);
+  const { data, error, isLoading } = useGetProductByIdQuery();
+
+  const [index, setIndex] = useState(0);
   const myRef = useRef(null);
 
   const handleTab = (index) => {
-    // this.setState({index: index})
-    setindex(index);
+    setIndex(index);
     const images = myRef.current.children;
     for (let i = 0; i < images.length; i++) {
       images[i].className = images[i].className.replace("active", "");
@@ -44,53 +49,82 @@ const ProductDetails = () => {
     images[index].className = "active";
   };
 
-  const produtQuntity = (num) => {
-    const myproject = selectedProducts.find((itemUser) => itemUser.id === num);
-    return myproject ? myproject.Quantity : 0;
+  const productQuantity = (num) => {
+    const product = selectedProducts.find((item) => item.id === num);
+    return product ? product.Quantity : 0;
   };
 
   if (isLoading) {
     return (
-      <Box sx={{ display: "flex" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
   }
 
   if (error) {
+    console.error("Error fetching product:", error);
     return (
-      <Box sx={{ display: "flex" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <Typography variant="h1" color="error">
-          {" "}
-          ERROR{" "}
+          ERROR
         </Typography>
       </Box>
     );
   }
+
   if (data) {
+    const product = data.find((item) => item.id === productId);
+    if (!product) {
+      return (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+          }}
+        >
+          <Typography variant="h1" color="error">
+            Product Not Found
+          </Typography>
+        </Box>
+      );
+    }
+
     return (
       <div className="app details-page">
         <div className="details">
           <div className="big-img">
-            <img src={data.imageLink[index]} alt="" />
+            <img src={product.imageLink[index]} alt={product.productName} />
           </div>
 
           <div className="box">
             <div className="row">
-              <h2>{data.productName}</h2>
-              <span>${data.price}</span>
+              <h2>{product.productName}</h2>
+              <span>${product.price}</span>
             </div>
-            {/* <Colors colors={data.colors} /> */}
-
-            <p>{data.description}</p>
-
+            <p>{product.description}</p>
             <DetailsThumb
-              images={data.imageLink}
+              images={product.imageLink}
               tab={handleTab}
               myRef={myRef}
             />
-            {/* <button className="cart">Add to cart</button> */}
-            {selectedProductsID.includes(data.id) ? (
+            {selectedProductsID.includes(product.id) ? (
               <div
                 style={{
                   display: "flex",
@@ -101,24 +135,18 @@ const ProductDetails = () => {
                 <IconButton
                   color="primary"
                   sx={{ mr: "10px" }}
-                  onClick={() => {
-                    dispatch(decreaseQuantity(data));
-                  }}
+                  onClick={() => dispatch(decreaseQuantity(product))}
                 >
                   <Remove fontSize="small" />
                 </IconButton>
-
                 <StyledBadge
-                  badgeContent={produtQuntity(data.id)}
+                  badgeContent={productQuantity(product.id)}
                   color="secondary"
                 />
-
                 <IconButton
                   color="primary"
                   sx={{ ml: "10px" }}
-                  onClick={() => {
-                    dispatch(increaseQuantity(data));
-                  }}
+                  onClick={() => dispatch(increaseQuantity(product))}
                 >
                   <Add fontSize="small" />
                 </IconButton>
@@ -128,9 +156,7 @@ const ProductDetails = () => {
                 sx={{ textTransform: "capitalize", p: 1, lineHeight: 1.1 }}
                 variant="contained"
                 color="primary"
-                onClick={() => {
-                  dispatch(addProduct(data));
-                }}
+                onClick={() => dispatch(addProduct(product))}
               >
                 <ShoppingCart sx={{ fontSize: "18px", mr: 1 }} /> Add to cart
               </Button>
@@ -140,6 +166,8 @@ const ProductDetails = () => {
       </div>
     );
   }
+
+  return null;
 };
 
 export default ProductDetails;

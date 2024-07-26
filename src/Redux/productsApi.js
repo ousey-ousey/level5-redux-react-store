@@ -12,7 +12,7 @@ export const productsApi = createApi({
       query: () => `dataproduct.json`,
     }),
     getProductById: builder.query({
-      query: (id) => `dataproduct.json/${id}`,
+      query: () => `dataproduct.json`, // Fetch all products
     }),
   }),
 });
